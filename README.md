@@ -24,7 +24,7 @@ Install and enable the plugin:
 omarchy plugin add https://github.com/pomartel/idle-power.git --enable
 ```
 
-The plugin ID remains `local.idle-power`. It replaces `omarchy.idle`, so the
+The plugin ID is `idle-power`. It replaces `omarchy.idle`, so the
 first-party service should be disabled in `~/.config/omarchy/shell.json`:
 
 ```json
@@ -35,7 +35,7 @@ first-party service should be disabled in `~/.config/omarchy/shell.json`:
     "suspend": 86400
   },
   "plugins": [
-    { "id": "local.idle-power" }
+    { "id": "idle-power" }
   ],
   "disabledPlugins": [
     "omarchy.idle"
@@ -72,7 +72,7 @@ omarchy-shell idle-power status | jq
 Update an installed copy with:
 
 ```bash
-omarchy plugin update local.idle-power
+omarchy plugin update idle-power
 ```
 
 ## Development

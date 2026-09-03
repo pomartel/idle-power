@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "local.idle-power",
+  "id": "idle-power",
   "name": "Idle Power",
   "version": "1.3.0",
   "author": "Pierre Olivier Martel",
