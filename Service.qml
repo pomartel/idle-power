@@ -20,8 +20,9 @@ Item {
   readonly property var idleConfig: shell && shell.shellConfig && shell.shellConfig.idle ? shell.shellConfig.idle : ({})
   readonly property int screensaverTimeoutSeconds: secondsFromConfig(idleConfig.screensaver, defaultScreensaverSeconds)
   readonly property int monitorOffTimeoutSeconds: secondsFromConfig(idleConfig.monitorOff, defaultMonitorOffSeconds)
+  readonly property bool suspendEnabled: idleConfig.suspend !== false
   readonly property int suspendTimeoutSeconds: secondsFromConfig(idleConfig.suspend, defaultSuspendSeconds)
-  readonly property int firstIdleTimeoutSeconds: Math.min(screensaverTimeoutSeconds, monitorOffTimeoutSeconds, suspendTimeoutSeconds)
+  readonly property int firstIdleTimeoutSeconds: Math.min(screensaverTimeoutSeconds, monitorOffTimeoutSeconds, suspendEnabled ? suspendTimeoutSeconds : Infinity)
   readonly property int screensaverDelaySeconds: Math.max(0, screensaverTimeoutSeconds - firstIdleTimeoutSeconds)
   readonly property int monitorOffDelaySeconds: Math.max(0, monitorOffTimeoutSeconds - firstIdleTimeoutSeconds)
   readonly property int suspendDelaySeconds: Math.max(0, suspendTimeoutSeconds - firstIdleTimeoutSeconds)
@@ -73,11 +74,11 @@ Item {
   function atSuspendDeadline() {
     // Allow one second for timers and Hyprland window events arriving in a
     // different order at a shared lock/suspend deadline.
-    return elapsedIdleSeconds() >= Math.max(0, root.suspendTimeoutSeconds - 1)
+    return root.suspendEnabled && elapsedIdleSeconds() >= Math.max(0, root.suspendTimeoutSeconds - 1)
   }
 
   function requestSuspend(reason) {
-    if (!root.idleEnabled || root.suspendRequestedThisCycle) return
+    if (!root.idleEnabled || !root.suspendEnabled || root.suspendRequestedThisCycle) return
 
     root.suspendRequestedThisCycle = true
     root.suspendRequestedAt = Date.now()
@@ -170,8 +171,10 @@ Item {
     if (root.monitorOffDelaySeconds === 0) turnOffMonitors("monitor-timeout-immediate")
     else monitorOffTimer.restart()
 
-    if (root.suspendDelaySeconds === 0) requestSuspend("suspend-timeout-immediate")
-    else suspendTimer.restart()
+    if (root.suspendEnabled) {
+      if (root.suspendDelaySeconds === 0) requestSuspend("suspend-timeout-immediate")
+      else suspendTimer.restart()
+    }
   }
 
   function cancelIdleCycle(reason) {

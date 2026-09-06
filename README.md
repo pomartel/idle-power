@@ -46,6 +46,8 @@ first-party service should be disabled in `~/.config/omarchy/shell.json`:
 Timeouts are measured in seconds from the beginning of user inactivity. In the
 example above, the screensaver starts after 5 minutes, displays power off after
 20 minutes, and the computer suspends after 24 hours.
+Set `idle.suspend` to `false` to disable automatic suspend while keeping the
+screensaver and monitor power-off timers enabled.
 
 When displays power off, the plugin stops the screensaver using the same process
 cleanup as Omarchy's lock transition. That expected close does not cancel the
