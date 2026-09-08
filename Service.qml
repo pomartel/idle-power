@@ -36,6 +36,7 @@ Item {
   property bool screensaverStopExpected: false
   property bool monitorsOffThisCycle: false
   property bool monitorWakeArmed: false
+  property bool monitorWakeGraceActive: false
   property bool monitorWakePending: false
   property bool suspendRequestedThisCycle: false
   property double idleCycleStartedAt: 0
@@ -121,6 +122,11 @@ Item {
 
     root.monitorsOffThisCycle = true
     root.monitorWakeArmed = false
+    // DPMS off can generate synthetic activity, especially when a Bluetooth
+    // input device reconnects at the same time. Ignore that transition briefly
+    // before arming the real activity detector.
+    root.monitorWakeGraceActive = true
+    monitorWakeGraceTimer.restart()
     monitorOffTimer.stop()
     logEvent("monitors-off-requested", reason || "timeout")
     monitorOffProcess.command = ["omarchy-brightness-display", "off"]
@@ -133,6 +139,8 @@ Item {
 
     root.monitorsOffThisCycle = false
     root.monitorWakeArmed = false
+    root.monitorWakeGraceActive = false
+    monitorWakeGraceTimer.stop()
     root.screensaverStopExpected = false
     screensaverStopGraceTimer.stop()
     logEvent("monitors-wake-requested", reason || "idle-cycle-cancel")
@@ -157,6 +165,7 @@ Item {
     root.screensaverStopExpected = false
     root.monitorsOffThisCycle = false
     root.monitorWakeArmed = false
+    root.monitorWakeGraceActive = false
     root.suspendRequestedThisCycle = false
     root.suspendRequestedAt = 0
     // IdleMonitor fires after firstIdleTimeoutSeconds, so reconstruct the
@@ -303,6 +312,7 @@ Item {
       screensaverStopExpected: root.screensaverStopExpected,
       monitorsOff: root.monitorsOffThisCycle,
       monitorWakeArmed: root.monitorWakeArmed,
+      monitorWakeGraceActive: root.monitorWakeGraceActive,
       monitorWakePending: root.monitorWakePending,
       suspendRequested: root.suspendRequestedThisCycle,
       screensaver: root.screensaverTimeoutSeconds,
@@ -359,7 +369,7 @@ Item {
 
   IdleMonitor {
     id: monitorWakeMonitor
-    enabled: root.idleEnabled && root.monitorsOffThisCycle
+    enabled: root.idleEnabled && root.monitorsOffThisCycle && !root.monitorWakeGraceActive
     timeout: 1
     respectInhibitors: false
     onIsIdleChanged: {
@@ -408,6 +418,16 @@ Item {
     interval: 3000
     repeat: false
     onTriggered: root.screensaverStopExpected = false
+  }
+
+  Timer {
+    id: monitorWakeGraceTimer
+    interval: 5000
+    repeat: false
+    onTriggered: {
+      if (root.idleEnabled && root.monitorsOffThisCycle)
+        root.monitorWakeGraceActive = false
+    }
   }
 
   Timer {
