@@ -17,7 +17,12 @@ Item {
   readonly property int defaultScreensaverSeconds: 150
   readonly property int defaultMonitorOffSeconds: 600
   readonly property int defaultSuspendSeconds: 7200
-  readonly property var idleConfig: shell && shell.shellConfig && shell.shellConfig.idle ? shell.shellConfig.idle : ({})
+  // Service plugins can receive either the full shell object or the compact
+  // service API.  The latter exposes `idleConfig`, not `shellConfig`.
+  // Preserve both paths so user settings (including `suspend: false`) are
+  // never silently replaced by the defaults.
+  readonly property var idleConfig: shell && shell.shellConfig && shell.shellConfig.idle
+    ? shell.shellConfig.idle : (shell && shell.idleConfig ? shell.idleConfig : ({}))
   readonly property int screensaverTimeoutSeconds: secondsFromConfig(idleConfig.screensaver, defaultScreensaverSeconds)
   readonly property int monitorOffTimeoutSeconds: secondsFromConfig(idleConfig.monitorOff, defaultMonitorOffSeconds)
   readonly property bool suspendEnabled: idleConfig.suspend !== false
