@@ -44,6 +44,7 @@ Item {
   property bool monitorWakeGraceActive: false
   property bool monitorWakePending: false
   property bool suspendRequestedThisCycle: false
+  property bool lockRequestedThisCycle: false
   property double idleCycleStartedAt: 0
   property double suspendRequestedAt: 0
   property string lastEvent: "starting"
@@ -126,6 +127,7 @@ Item {
     if (!root.idleEnabled || !root.idledThisCycle || root.monitorsOffThisCycle || root.suspendRequestedThisCycle) return
 
     root.monitorsOffThisCycle = true
+    root.lockRequestedThisCycle = true
     root.monitorWakeArmed = false
     // DPMS off can generate synthetic activity, especially when a Bluetooth
     // input device reconnects at the same time. Ignore that transition briefly
@@ -133,6 +135,9 @@ Item {
     root.monitorWakeGraceActive = true
     monitorWakeGraceTimer.restart()
     monitorOffTimer.stop()
+    logEvent("lock-requested", reason || "monitor-off")
+    lockProcess.command = ["bash", "-lc", "[[ $(omarchy-shell lock isLocked 2>/dev/null) == \"true\" ]] || omarchy-system-lock"]
+    lockProcess.running = true
     logEvent("monitors-off-requested", reason || "timeout")
     monitorOffProcess.command = ["omarchy-brightness-display", "off"]
     monitorOffProcess.running = true
@@ -172,6 +177,7 @@ Item {
     root.monitorWakeArmed = false
     root.monitorWakeGraceActive = false
     root.suspendRequestedThisCycle = false
+    root.lockRequestedThisCycle = false
     root.suspendRequestedAt = 0
     // IdleMonitor fires after firstIdleTimeoutSeconds, so reconstruct the
     // beginning of the user-idle interval for wall-clock deadline checks.
@@ -204,6 +210,7 @@ Item {
     root.screensaverStopExpected = false
     root.monitorWakeArmed = false
     root.suspendRequestedThisCycle = false
+    root.lockRequestedThisCycle = false
     root.idleCycleStartedAt = 0
     root.suspendRequestedAt = 0
     resetScreensaverWindows()
@@ -320,6 +327,7 @@ Item {
       monitorWakeGraceActive: root.monitorWakeGraceActive,
       monitorWakePending: root.monitorWakePending,
       suspendRequested: root.suspendRequestedThisCycle,
+      lockRequested: root.lockRequestedThisCycle,
       screensaver: root.screensaverTimeoutSeconds,
       monitorOff: root.monitorOffTimeoutSeconds,
       suspend: root.suspendTimeoutSeconds,
@@ -332,6 +340,7 @@ Item {
         screensaver: screensaverTimer.running,
         monitorOff: monitorOffTimer.running,
         suspend: suspendTimer.running,
+        lock: lockProcess.running,
         screensaverLaunchGrace: screensaverLaunchGraceTimer.running,
         screensaverStopGrace: screensaverStopGraceTimer.running,
         suspendRequestGuard: suspendRequestGuardTimer.running
@@ -357,6 +366,9 @@ Item {
           running: suspendProcess.running,
           lastExitCode: root.lastSuspendExitCode,
           lastExitStatus: root.lastSuspendExitStatus
+        },
+        lock: {
+          running: lockProcess.running
         }
       },
       lastEvent: root.lastEvent,
@@ -473,6 +485,13 @@ Item {
       root.lastMonitorOffExitStatus = exitStatus
       root.logEvent("monitor-off-process-exit", "exitCode=" + exitCode + " status=" + exitStatus)
       if (root.monitorWakePending) root.startMonitorWake()
+    }
+  }
+
+  Process {
+    id: lockProcess
+    onExited: function(exitCode, exitStatus) {
+      root.logEvent("lock-process-exit", "exitCode=" + exitCode + " status=" + exitStatus)
     }
   }
 

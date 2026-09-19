@@ -2,7 +2,7 @@
 
 Idle Power is an [Omarchy](https://omarchy.org/) service plugin that provides
 separate deadlines for the screensaver, monitor power-off, and system suspend
-without adding an idle lock deadline.
+with the session locked when the displays power off.
 
 It is derived from Omarchy's `omarchy.idle` service and keeps its inhibitor-aware
 idle monitoring, screensaver lifecycle handling, and Stay Awake integration.
@@ -10,7 +10,7 @@ idle monitoring, screensaver lifecycle handling, and Stay Awake integration.
 ## Features
 
 - Configurable screensaver, DPMS monitor-off, and suspend deadlines
-- No idle lock; Omarchy can still lock normally when the system suspends
+- Locks the session when the displays power off, before DPMS blanks them
 - Stops the screensaver when displays power off, without cancelling suspend
 - Restores displays on activity after DPMS power-off
 - Respects system idle inhibitors and Omarchy's Stay Awake toggle
@@ -44,8 +44,8 @@ first-party service should be disabled in `~/.config/omarchy/shell.json`:
 ```
 
 Timeouts are measured in seconds from the beginning of user inactivity. In the
-example above, the screensaver starts after 5 minutes, displays power off after
-20 minutes, and the computer suspends after 24 hours.
+example above, the screensaver starts after 5 minutes, the session locks and
+displays power off after 20 minutes, and the computer suspends after 24 hours.
 Set `idle.suspend` to `false` to disable automatic suspend while keeping the
 screensaver and monitor power-off timers enabled.
 
